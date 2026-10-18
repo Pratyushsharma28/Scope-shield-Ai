@@ -104,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
                     <div className="truncate mr-2">
                       <div className="truncate font-medium">{c.title}</div>
                       <div className="text-[10px] text-slate-400">
-                        {c.clientName} · ${c.hourlyRate}/hr
+                        {c.clientName} · ₹{c.hourlyRate.toLocaleString('en-IN')}/hr
                       </div>
                     </div>
                     {activeContract?.id === c.id && (
@@ -201,7 +201,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onToggleMobileSidebar }) => {
                   <div className="mt-1 flex items-center gap-1.5 text-[10px] text-indigo-700 font-semibold">
                     <span>{currentUser.plan} PLAN</span>
                     <span>·</span>
-                    <span>${currentUser.defaultHourlyRate}/hr rate</span>
+                    <span>₹{currentUser.defaultHourlyRate.toLocaleString('en-IN')}/hr</span>
                   </div>
                 </div>
 

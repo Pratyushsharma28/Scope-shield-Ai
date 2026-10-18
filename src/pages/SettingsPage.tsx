@@ -48,7 +48,7 @@ export const SettingsPage: React.FC = () => {
       name: name.trim(),
       email: email.trim(),
       companyName: companyName.trim(),
-      defaultHourlyRate: Number(defaultHourlyRate) || 125,
+      defaultHourlyRate: Number(defaultHourlyRate) || 8500,
       currency,
     };
     setCurrentUser(updated);

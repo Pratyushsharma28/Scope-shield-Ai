@@ -61,6 +61,43 @@ export interface ClientRequestInput {
   customHourlyRate?: number;
 }
 
+/**
+ * Exact fields required by Member 2's backend endpoint:
+ * POST /api/analyze (multipart/form-data)
+ */
+export interface BackendAnalyzeRequestFields {
+  contract: File; // PDF or TXT file
+  clientRequest: string;
+  estimatedExtraHours: number;
+  hourlyRate: number;
+}
+
+/**
+ * Accommodates flexible backend response shapes from Member 2
+ */
+export interface BackendAnalyzeResponse {
+  classification?: ScopeClassification | string;
+  confidenceScore?: number;
+  confidence?: number;
+  summary?: string;
+  executiveSummary?: string;
+  detailedFindings?: string[];
+  findings?: string[];
+  evidence?: ContractEvidence[];
+  contractEvidence?: ContractEvidence[];
+  costEstimate?: Partial<CostEstimate>;
+  estimatedCost?: number;
+  suggestedAction?: SuggestedAction | string;
+  recommendation?: string;
+  freelancerRecommendation?: string;
+  status?: string;
+  data?: any;
+  success?: boolean;
+  error?: string;
+  message?: string;
+  [key: string]: any;
+}
+
 export interface AnalysisResult {
   id: string;
   requestId?: string;
@@ -89,6 +126,7 @@ export type ProposalStatus =
   | 'SENT' 
   | 'VIEWED' 
   | 'APPROVED' 
+  | 'REJECTED'
   | 'DECLINED' 
   | 'REVISED';
 

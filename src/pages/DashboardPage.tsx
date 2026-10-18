@@ -236,7 +236,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div>
             <div className="text-2xl font-extrabold text-slate-900 tracking-tight font-mono">
-              ${estimatedExtraRevenue.toLocaleString()}
+              ₹{Math.round(estimatedExtraRevenue).toLocaleString('en-IN')}
             </div>
             <div className="text-[11px] text-slate-500 mt-1 flex items-center gap-1">
               <span className="text-emerald-700 font-semibold inline-flex items-center gap-0.5">
@@ -430,7 +430,7 @@ export const DashboardPage: React.FC = () => {
                 <div>
                   <div className="text-xs font-bold text-slate-900">{c.title}</div>
                   <div className="text-[11px] text-slate-500 mt-0.5">
-                    {c.clientName} · ${c.hourlyRate}/hr · {c.exclusions.length} exclusions indexed
+                    {c.clientName} · ₹{c.hourlyRate.toLocaleString('en-IN')}/hr · {c.exclusions.length} exclusions indexed
                   </div>
                 </div>
                 <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
@@ -447,7 +447,7 @@ export const DashboardPage: React.FC = () => {
               <span className="text-xs text-slate-400 font-mono">{proposals.length} total</span>
             </div>
             <p className="text-xs text-slate-500 mt-1 leading-relaxed">
-              Every out-of-scope analysis can be turned into a binding digital change proposal. Track your approved client authorizations on the board.
+              Every out-of-scope analysis can be turned into a commercial change order proposal. Track client authorizations on the approval tracking board.
             </p>
           </div>
 

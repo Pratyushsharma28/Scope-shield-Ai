@@ -33,13 +33,17 @@ export const ApprovalTrackingPage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<'ALL' | ProposalStatus>('ALL');
 
-  // Columns for Kanban
+  // Format INR helper
+  const formatINR = (val: number): string => {
+    return '₹' + Math.round(val).toLocaleString('en-IN');
+  };
+
+  // 4 Primary Status Columns requested: Draft, Sent, Approved, Rejected
   const columns: { id: ProposalStatus; label: string; dotColor: string }[] = [
-    { id: 'DRAFT', label: 'Draft Proposals', dotColor: 'bg-slate-400' },
-    { id: 'SENT', label: 'Sent to Client', dotColor: 'bg-indigo-500' },
-    { id: 'VIEWED', label: 'Viewed by Client', dotColor: 'bg-blue-500' },
-    { id: 'APPROVED', label: 'Approved & Signed', dotColor: 'bg-emerald-500' },
-    { id: 'DECLINED', label: 'Declined / Deferred', dotColor: 'bg-rose-500' },
+    { id: 'DRAFT', label: 'Draft', dotColor: 'bg-amber-400' },
+    { id: 'SENT', label: 'Sent', dotColor: 'bg-indigo-500' },
+    { id: 'APPROVED', label: 'Approved', dotColor: 'bg-emerald-500' },
+    { id: 'REJECTED', label: 'Rejected', dotColor: 'bg-rose-500' },
   ];
 
   const filteredProposals = proposals.filter((p) => {
@@ -49,7 +53,9 @@ export const ApprovalTrackingPage: React.FC = () => {
       p.proposalNumber.toLowerCase().includes(searchQuery.toLowerCase());
     
     if (selectedFilter === 'ALL') return matchesSearch;
-    return matchesSearch && p.status === selectedFilter;
+    // Map DECLINED to REJECTED or VIEWED to SENT for filtering
+    const effectiveStatus = p.status === 'DECLINED' ? 'REJECTED' : p.status === 'VIEWED' ? 'SENT' : p.status;
+    return matchesSearch && effectiveStatus === selectedFilter;
   });
 
   const totalApprovedValue = proposals
@@ -62,7 +68,7 @@ export const ApprovalTrackingPage: React.FC = () => {
 
   const approvalRate = Math.round(
     (proposals.filter((p) => p.status === 'APPROVED').length /
-      (proposals.filter((p) => p.status === 'APPROVED' || p.status === 'DECLINED').length || 1)) *
+      (proposals.filter((p) => p.status === 'APPROVED' || p.status === 'REJECTED' || p.status === 'DECLINED').length || 1)) *
       100
   );
 
@@ -101,7 +107,7 @@ export const ApprovalTrackingPage: React.FC = () => {
             Approved Extra Revenue
           </div>
           <div className="text-2xl font-extrabold text-slate-900 mt-2 font-mono">
-            ${totalApprovedValue.toLocaleString()}
+            {formatINR(totalApprovedValue)}
           </div>
           <div className="text-xs text-slate-500 mt-1 flex items-center gap-1">
             <span className="text-emerald-700 font-semibold inline-flex items-center gap-0.5">
@@ -116,7 +122,7 @@ export const ApprovalTrackingPage: React.FC = () => {
             Awaiting Client Signature
           </div>
           <div className="text-2xl font-extrabold text-slate-900 mt-2 font-mono">
-            ${totalSentValue.toLocaleString()}
+            {formatINR(totalSentValue)}
           </div>
           <div className="text-xs text-slate-500 mt-1">
             <span>{proposals.filter((p) => p.status === 'SENT' || p.status === 'VIEWED').length} active proposals dispatched</span>
@@ -149,11 +155,11 @@ export const ApprovalTrackingPage: React.FC = () => {
           />
         </div>
 
-        {/* Status Filter Tabs adhering to button filter rules */}
+        {/* 4 Status Filter Tabs: All, Draft, Sent, Approved, Rejected */}
         <div className="flex items-center gap-1 overflow-x-auto w-full sm:w-auto p-1 bg-slate-100 rounded-lg text-xs font-semibold">
           <button
             onClick={() => setSelectedFilter('ALL')}
-            className={`px-3 py-1 rounded-md transition-colors ${
+            className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
               selectedFilter === 'ALL'
                 ? 'bg-white text-slate-900 shadow-xs'
                 : 'text-slate-600 hover:text-slate-900'
@@ -162,10 +168,20 @@ export const ApprovalTrackingPage: React.FC = () => {
             All ({proposals.length})
           </button>
           <button
+            onClick={() => setSelectedFilter('DRAFT')}
+            className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              selectedFilter === 'DRAFT'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            Draft
+          </button>
+          <button
             onClick={() => setSelectedFilter('SENT')}
-            className={`px-3 py-1 rounded-md transition-colors ${
+            className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
               selectedFilter === 'SENT'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
@@ -173,31 +189,35 @@ export const ApprovalTrackingPage: React.FC = () => {
           </button>
           <button
             onClick={() => setSelectedFilter('APPROVED')}
-            className={`px-3 py-1 rounded-md transition-colors ${
+            className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
               selectedFilter === 'APPROVED'
-                ? 'bg-white text-slate-900 shadow-xs'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
             Approved
           </button>
           <button
-            onClick={() => setSelectedFilter('DECLINED')}
-            className={`px-3 py-1 rounded-md transition-colors ${
-              selectedFilter === 'DECLINED'
-                ? 'bg-white text-slate-900 shadow-xs'
+            onClick={() => setSelectedFilter('REJECTED')}
+            className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              selectedFilter === 'REJECTED'
+                ? 'bg-white text-slate-900 shadow-xs font-bold'
                 : 'text-slate-600 hover:text-slate-900'
             }`}
           >
-            Declined
+            Rejected
           </button>
         </div>
       </div>
 
-      {/* Kanban Board Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+      {/* Kanban Board Grid: 4 Columns (Draft, Sent, Approved, Rejected) */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {columns.map((col) => {
-          const colProposals = filteredProposals.filter((p) => p.status === col.id);
+          const colProposals = filteredProposals.filter((p) => {
+            if (col.id === 'SENT') return p.status === 'SENT' || p.status === 'VIEWED';
+            if (col.id === 'REJECTED') return p.status === 'REJECTED' || p.status === 'DECLINED';
+            return p.status === col.id;
+          });
 
           return (
             <div
@@ -232,7 +252,7 @@ export const ApprovalTrackingPage: React.FC = () => {
                           {proposal.proposalNumber}
                         </span>
                         <span className="font-mono font-extrabold text-slate-900 text-xs">
-                          ${proposal.totalAmount.toLocaleString()}
+                          {formatINR(proposal.totalAmount)}
                         </span>
                       </div>
 
