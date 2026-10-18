@@ -64,9 +64,10 @@ export const AnalyzeRequestPage: React.FC = () => {
   const validateFile = (file: File): string | null => {
     const ext = '.' + file.name.split('.').pop()?.toLowerCase();
     const isExtensionAllowed = allowedExtensions.includes(ext);
-    const isMimeAllowed = allowedMimeTypes.includes(file.type) || file.type === '';
+    const expectedMimeType = ext === '.pdf' ? 'application/pdf' : ext === '.txt' ? 'text/plain' : '';
+    const isMimeAllowed = allowedMimeTypes.includes(file.type);
 
-    if (!isExtensionAllowed && !isMimeAllowed) {
+    if (!isExtensionAllowed || !isMimeAllowed || file.type !== expectedMimeType) {
       return 'Invalid file type. Only PDF (.pdf) and Plain Text (.txt) files are supported.';
     }
 
@@ -157,16 +158,18 @@ export const AnalyzeRequestPage: React.FC = () => {
       newErrors.clientRequest = 'Client request text is required.';
     } else if (clientRequest.trim().length < 15) {
       newErrors.clientRequest = 'Please provide sufficient context for the client request (at least 15 characters).';
+    } else if (clientRequest.trim().length > 4000) {
+      newErrors.clientRequest = 'Client request text must be 4,000 characters or fewer.';
     }
 
     const hoursNum = Number(estimatedHours);
-    if (!estimatedHours || isNaN(hoursNum) || hoursNum <= 0) {
-      newErrors.estimatedHours = 'Estimated additional hours must be a positive number greater than 0.';
+    if (!estimatedHours || isNaN(hoursNum) || hoursNum <= 0 || hoursNum > 500) {
+      newErrors.estimatedHours = 'Estimated additional hours must be greater than 0 and no more than 500.';
     }
 
     const rateNum = Number(hourlyRateINR);
-    if (!hourlyRateINR || isNaN(rateNum) || rateNum <= 0) {
-      newErrors.hourlyRateINR = 'Hourly rate in INR must be a valid amount greater than ₹0.';
+    if (!hourlyRateINR || isNaN(rateNum) || rateNum <= 0 || rateNum > 100000) {
+      newErrors.hourlyRateINR = 'Hourly rate in INR must be greater than ₹0 and no more than ₹100,000.';
     }
 
     setErrors(newErrors);
@@ -202,7 +205,6 @@ export const AnalyzeRequestPage: React.FC = () => {
       formData.append('clientRequest', clientRequest.trim());
       formData.append('estimatedExtraHours', estimatedHours.trim());
       formData.append('hourlyRate', hourlyRateINR.trim());
-      formData.append('projectName', projectName.trim());
 
       setSubmissionStep(
         backendConfig.useLiveBackend
@@ -231,7 +233,11 @@ export const AnalyzeRequestPage: React.FC = () => {
       showToast({
         type: 'success',
         title: response.data.isDemoData ? 'Mock Analysis Ready' : 'Analysis Successfully Completed',
-        message: `Outcome: ${response.data.classification.replace(/_/g, ' ')} (${response.data.confidenceScore}% confidence)`,
+        message: `Outcome: ${response.data.classification.replace(/_/g, ' ')}${
+          response.data.confidenceScore !== undefined
+            ? ` (${response.data.confidenceScore}% confidence)`
+            : ''
+        }`,
       });
 
       // Navigate to Analysis Results ONLY after a successful response
@@ -510,6 +516,7 @@ export const AnalyzeRequestPage: React.FC = () => {
             </div>
             <textarea
               rows={5}
+              maxLength={4000}
               value={clientRequest}
               onChange={(e) => {
                 setClientRequest(e.target.value);
@@ -585,6 +592,7 @@ export const AnalyzeRequestPage: React.FC = () => {
                 <input
                   type="number"
                   min="100"
+                  max="100000"
                   step="100"
                   value={hourlyRateINR}
                   onChange={(e) => {

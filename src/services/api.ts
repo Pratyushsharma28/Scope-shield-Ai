@@ -70,7 +70,7 @@ export const checkBackendHealth = async (customUrl?: string): Promise<{ isAlive:
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 4000);
 
-    const res = await fetch(`${url.replace(/\/$/, '')}/health`, {
+    const res = await fetch(`${url.replace(/\/$/, '')}/api/health`, {
       method: 'GET',
       headers: { 'Accept': 'application/json' },
       signal: controller.signal,
@@ -106,79 +106,101 @@ export const normalizeBackendResponse = (
   // If backend wrapped output in data envelope e.g. { data: { ... } }
   const payload = (raw && typeof raw === 'object' && raw.data && typeof raw.data === 'object') ? raw.data : raw;
 
-  // Determine classification
-  let classification: ScopeClassification = 'OUT_OF_SCOPE';
-  if (payload.classification) {
-    const upper = String(payload.classification).toUpperCase().replace(/[\s-]/g, '_');
-    if (upper === 'IN_SCOPE' || upper === 'OUT_OF_SCOPE' || upper === 'SCOPE_CREEP_RISK') {
-      classification = upper as ScopeClassification;
-    } else if (upper.includes('IN')) {
-      classification = 'IN_SCOPE';
-    } else if (upper.includes('RISK') || upper.includes('CREEP') || upper.includes('AMBIGUOUS')) {
-      classification = 'SCOPE_CREEP_RISK';
-    }
-  } else if (typeof payload.isOutOfScope === 'boolean') {
-    classification = payload.isOutOfScope ? 'OUT_OF_SCOPE' : 'IN_SCOPE';
+  if (!payload || typeof payload !== 'object') {
+    throw new Error('Backend returned an invalid analysis response.');
   }
 
-  const confidenceScore = Number(payload.confidenceScore || payload.confidence) || 95;
+  const statusClassifications: Partial<Record<string, ScopeClassification>> = {
+    within_scope: 'IN_SCOPE',
+    potentially_out_of_scope: 'OUT_OF_SCOPE',
+    needs_review: 'SCOPE_CREEP_RISK',
+  };
+  const rawClassification = String(payload.classification || '').toUpperCase().replace(/[\s-]/g, '_');
+  const classification =
+    rawClassification === 'IN_SCOPE' ||
+    rawClassification === 'OUT_OF_SCOPE' ||
+    rawClassification === 'SCOPE_CREEP_RISK'
+      ? rawClassification
+      : statusClassifications[String(payload.status || '').toLowerCase()];
+  if (!classification) {
+    throw new Error('Backend response is missing a recognized analysis status.');
+  }
 
-  const summary = 
-    payload.executiveSummary ||
-    payload.summary ||
-    payload.explanation ||
-    payload.description ||
-    payload.message ||
-    `Contractual evaluation against ${fileName}.`;
+  const confidenceValue = payload.confidenceScore ?? payload.confidence;
+  const confidenceScore = typeof confidenceValue === 'number' &&
+    Number.isFinite(confidenceValue) &&
+    confidenceValue >= 0 &&
+    confidenceValue <= 100
+    ? confidenceValue
+    : undefined;
 
-  const detailedFindings: string[] = Array.isArray(payload.detailedFindings)
-    ? payload.detailedFindings
-    : Array.isArray(payload.findings)
-    ? payload.findings
-    : [
-        `Evaluated contract file: ${fileName}.`,
-        `Submitted extra effort: ${hours} hours @ ₹${rate.toLocaleString('en-IN')}/hr.`,
-      ];
+  const summary = [
+    payload.executiveSummary,
+    payload.summary,
+    payload.explanation,
+    payload.description,
+  ].find((value) => typeof value === 'string' && value.trim());
+  if (!summary) {
+    throw new Error('Backend response is missing its analysis summary.');
+  }
 
-  const evidence = Array.isArray(payload.evidence) && payload.evidence.length > 0
-    ? payload.evidence
-    : Array.isArray(payload.contractEvidence) && payload.contractEvidence.length > 0
-    ? payload.contractEvidence
-    : [
-        {
-          id: `ev_backend_${Date.now()}`,
-          clauseTitle: 'Scope Boundary & Deliverables Clause',
-          sectionNumber: 'Section 2',
-          contractSnippet: `From contract "${fileName}": Deliverables are strictly restricted to the signed Statement of Work. Additional requested work billable at rate of ₹${rate.toLocaleString('en-IN')}/hr.`,
-          relevanceScore: 92,
-          analysisNote: 'Cross-referenced against uploaded contract clauses.',
-          isContradicting: classification !== 'IN_SCOPE',
-        },
-      ];
+  const rawFindings = payload.detailedFindings || payload.findings || payload.uncertaintyReasons;
+  const detailedFindings: string[] = Array.isArray(rawFindings)
+    ? rawFindings.filter((finding: unknown): finding is string => typeof finding === 'string')
+    : [];
 
-  const calculatedTotal = hours * rate;
+  const rawEvidence = payload.evidence || payload.contractEvidence;
+  const evidence = Array.isArray(rawEvidence)
+    ? rawEvidence.map((item: any, index: number) => {
+        const contractSnippet = item?.contractSnippet ?? item?.clause;
+        if (typeof contractSnippet !== 'string' || !contractSnippet.trim()) {
+          throw new Error('Backend response contains invalid contract evidence.');
+        }
+        return {
+          id: typeof item.id === 'string' ? item.id : `ev_backend_${index}`,
+          clauseTitle: typeof item.clauseTitle === 'string' ? item.clauseTitle : 'Contract clause',
+          sectionNumber: typeof item.sectionNumber === 'string' ? item.sectionNumber : 'Not identified',
+          contractSnippet,
+          ...(typeof item.relevanceScore === 'number' ? { relevanceScore: item.relevanceScore } : {}),
+          analysisNote: typeof item.analysisNote === 'string'
+            ? item.analysisNote
+            : typeof item.explanation === 'string'
+              ? item.explanation
+              : '',
+          ...(typeof item.isContradicting === 'boolean' ? { isContradicting: item.isContradicting } : {}),
+        };
+      })
+    : [];
 
-  const costEstimate = payload.costEstimate && typeof payload.costEstimate === 'object'
-    ? {
-        estimatedHoursMin: Number(payload.costEstimate.estimatedHoursMin) || Math.max(1, Math.round(hours * 0.8)),
-        estimatedHoursMax: Number(payload.costEstimate.estimatedHoursMax) || Math.round(hours * 1.25),
-        recommendedHourlyRate: Number(payload.costEstimate.recommendedHourlyRate) || rate,
-        calculatedAmountMin: Number(payload.costEstimate.calculatedAmountMin) || Math.round(hours * 0.8 * rate),
-        calculatedAmountMax: Number(payload.costEstimate.calculatedAmountMax) || Math.round(hours * 1.25 * rate),
-        suggestedFixedPrice: Number(payload.costEstimate.suggestedFixedPrice) || calculatedTotal,
-        timelineImpactDays: Number(payload.costEstimate.timelineImpactDays) || Math.ceil(hours / 6),
-        complexity: (payload.costEstimate.complexity || (hours > 30 ? 'HIGH' : hours > 12 ? 'MEDIUM' : 'LOW')) as any,
-      }
-    : {
-        estimatedHoursMin: Math.max(1, Math.round(hours * 0.8)),
-        estimatedHoursMax: Math.round(hours * 1.25),
-        recommendedHourlyRate: rate,
-        calculatedAmountMin: Math.round(hours * 0.8 * rate),
-        calculatedAmountMax: Math.round(hours * 1.25 * rate),
-        suggestedFixedPrice: calculatedTotal,
-        timelineImpactDays: Math.ceil(hours / 6),
-        complexity: hours > 30 ? 'HIGH' : hours > 12 ? 'MEDIUM' : 'LOW' as any,
-      };
+  const backendCostEstimate = payload.costEstimate && typeof payload.costEstimate === 'object'
+    ? payload.costEstimate
+    : {};
+  const estimatedHours = Number(payload.estimatedExtraHours ?? backendCostEstimate.estimatedHoursMin ?? hours);
+  const hourlyRate = Number(payload.hourlyRate ?? backendCostEstimate.recommendedHourlyRate ?? rate);
+  const estimatedCost = Number(
+    payload.estimatedExtraCost ??
+    payload.estimatedCost ??
+    backendCostEstimate.suggestedFixedPrice ??
+    estimatedHours * hourlyRate
+  );
+  if (![estimatedHours, hourlyRate, estimatedCost].every(Number.isFinite)) {
+    throw new Error('Backend response contains invalid pricing values.');
+  }
+
+  const costEstimate = {
+    estimatedHoursMin: Number(backendCostEstimate.estimatedHoursMin ?? estimatedHours),
+    estimatedHoursMax: Number(backendCostEstimate.estimatedHoursMax ?? estimatedHours),
+    recommendedHourlyRate: Number(backendCostEstimate.recommendedHourlyRate ?? hourlyRate),
+    calculatedAmountMin: Number(backendCostEstimate.calculatedAmountMin ?? estimatedCost),
+    calculatedAmountMax: Number(backendCostEstimate.calculatedAmountMax ?? estimatedCost),
+    suggestedFixedPrice: Number(backendCostEstimate.suggestedFixedPrice ?? estimatedCost),
+    ...(typeof backendCostEstimate.timelineImpactDays === 'number'
+      ? { timelineImpactDays: backendCostEstimate.timelineImpactDays }
+      : {}),
+    ...(['LOW', 'MEDIUM', 'HIGH', 'ARCHITECTURAL'].includes(backendCostEstimate.complexity)
+      ? { complexity: backendCostEstimate.complexity }
+      : {}),
+  };
 
   let suggestedAction: SuggestedAction = 'ISSUE_CHANGE_ORDER';
   if (payload.suggestedAction) {
@@ -188,14 +210,11 @@ export const normalizeBackendResponse = (
     }
   } else if (classification === 'IN_SCOPE') {
     suggestedAction = 'ACCEPT_AS_IS';
+  } else if (classification === 'SCOPE_CREEP_RISK' || payload.requiresHumanReview === true) {
+    suggestedAction = 'REQUEST_CLARIFICATION';
   }
 
-  const freelancerRecommendation =
-    payload.freelancerRecommendation ||
-    payload.recommendation ||
-    (classification === 'IN_SCOPE'
-      ? 'Acknowledge request to client and proceed within standard project deliverables.'
-      : `Send Change Order specifying ${hours} hours (₹${calculatedTotal.toLocaleString('en-IN')}) before initiating work.`);
+  const freelancerRecommendation = payload.freelancerRecommendation || payload.recommendation;
 
   return {
     id: payload.id || `anl_live_${Date.now()}`,
@@ -211,8 +230,12 @@ export const normalizeBackendResponse = (
     evidence,
     costEstimate,
     suggestedAction,
-    freelancerRecommendation,
-    status: classification === 'IN_SCOPE' ? 'IN_SCOPE_RESOLVED' : 'CHANGE_ORDER_ISSUED',
+    ...(freelancerRecommendation ? { freelancerRecommendation } : {}),
+    status: classification === 'IN_SCOPE'
+      ? 'IN_SCOPE_RESOLVED'
+      : classification === 'SCOPE_CREEP_RISK' || payload.requiresHumanReview === true
+        ? 'PENDING_REVIEW'
+        : 'ACTION_REQUIRED',
     isDemoData: false, // Confirmed LIVE backend response
     analyzedAt: payload.analyzedAt || new Date().toISOString(),
     rawAiOutput: typeof raw === 'string' ? raw : JSON.stringify(raw, null, 2),
@@ -296,7 +319,13 @@ export const submitAnalyzeRequestFormData = async (
       let parsedError: string;
       try {
         const errorJson = JSON.parse(errorText);
-        parsedError = errorJson.message || errorJson.error || errorJson.detail || errorText;
+        const errorValue = errorJson.error;
+        parsedError =
+          (typeof errorJson.message === 'string' && errorJson.message) ||
+          (typeof errorValue === 'string' && errorValue) ||
+          (typeof errorValue?.message === 'string' && errorValue.message) ||
+          (typeof errorJson.detail === 'string' && errorJson.detail) ||
+          errorText;
       } catch {
         parsedError = errorText || res.statusText;
       }

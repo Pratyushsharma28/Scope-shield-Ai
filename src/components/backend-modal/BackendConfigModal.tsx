@@ -43,43 +43,26 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({ isOpen, 
     }
   };
 
-  const samplePayloadJson = `{
-  "contractId": "cnt_acme_saas_01",
-  "contractTitle": "Acme SaaS Web App Redesign",
-  "contractContent": "...",
-  "requestTitle": "Urgent: Add NetSuite ERP two-way sync",
-  "requestText": "Can we sync user transactions with NetSuite ERP before Friday launch?",
-  "requestChannel": "SLACK",
-  "hourlyRate": 125
-}`;
+  const samplePayload = `contract: <PDF or TXT file>
+clientRequest: "Please implement the requested change."
+estimatedExtraHours: 12
+hourlyRate: 8500`;
 
   const sampleResponseJson = `{
-  "classification": "OUT_OF_SCOPE", // 'IN_SCOPE' | 'OUT_OF_SCOPE' | 'SCOPE_CREEP_RISK'
-  "confidenceScore": 98,
-  "executiveSummary": "Excluded per Section 2.2 of SOW.",
-  "detailedFindings": ["Violates clause 2.2 ERP exclusion"],
+  "status": "needs_review",
+  "summary": "Review the request against the cited contract language.",
   "evidence": [
     {
-      "clauseTitle": "Third-Party Integrations & Exclusions",
-      "sectionNumber": "Section 2, Clause 2.2",
-      "contractSnippet": "Specifically excluded from this engagement are direct integrations with external ERP...",
-      "relevanceScore": 99,
-      "analysisNote": "NetSuite is explicitly named as an exclusion.",
-      "isContradicting": true
+      "clause": "Exact clause text extracted from the uploaded contract.",
+      "explanation": "How the clause relates to the client request."
     }
   ],
-  "costEstimate": {
-    "estimatedHoursMin": 28,
-    "estimatedHoursMax": 38,
-    "recommendedHourlyRate": 125,
-    "calculatedAmountMin": 3500,
-    "calculatedAmountMax": 4750,
-    "suggestedFixedPrice": 4200,
-    "timelineImpactDays": 7,
-    "complexity": "HIGH"
-  },
-  "suggestedAction": "ISSUE_CHANGE_ORDER",
-  "freelancerRecommendation": "Do not start until Change Order is signed."
+  "uncertaintyReasons": ["A human should review the scope interpretation."],
+  "requiresHumanReview": true,
+  "estimatedExtraHours": 12,
+  "hourlyRate": 8500,
+  "estimatedExtraCost": 102000,
+  "currency": "INR"
 }`;
 
   return (
@@ -186,7 +169,7 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({ isOpen, 
                     type="text"
                     value={urlInput}
                     onChange={(e) => setUrlInput(e.target.value)}
-                    placeholder="http://localhost:8000 or https://api.yourdomain.com"
+                    placeholder="http://localhost:3000 or https://api.yourdomain.com"
                     className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono text-xs"
                   />
                   <button
@@ -196,11 +179,11 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({ isOpen, 
                     className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg border border-slate-300 inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
                   >
                     <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
-                    <span>{isTesting ? 'Pinging...' : 'Test /health'}</span>
+                    <span>{isTesting ? 'Pinging...' : 'Test /api/health'}</span>
                   </button>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Expected health endpoint: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">{urlInput.replace(/\/$/, '')}/health</code>
+                  Expected health endpoint: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">{urlInput.replace(/\/$/, '')}/api/health</code>
                 </p>
 
                 {/* Test results banner */}
@@ -266,20 +249,20 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({ isOpen, 
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">POST /api/analyze</h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Member 2: Your server should implement this endpoint to receive the contract & request.
+                  Upload one PDF or TXT contract with the request and pricing fields shown below.
                 </p>
               </div>
 
               <div>
-                <span className="text-xs font-semibold text-slate-700">Request Body (JSON)</span>
+                <span className="text-xs font-semibold text-slate-700">Request Body (multipart/form-data)</span>
                 <pre className="mt-1.5 p-3 rounded-lg bg-slate-900 text-slate-100 text-xs overflow-x-auto">
-                  {samplePayloadJson}
+                  {samplePayload}
                 </pre>
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-700">Expected Response (JSON)</span>
+                  <span className="text-xs font-semibold text-slate-700">Response Schema Example (not a live analysis)</span>
                   <button
                     type="button"
                     onClick={() => {
@@ -303,45 +286,24 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({ isOpen, 
           {activeTab === 'quickstart' && (
             <div className="space-y-4 text-xs">
               <div className="p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-indigo-900">
-                <span className="font-bold">Integration Contract:</span> This frontend is completely decoupled from the backend. 
-                Whether you write FastAPI (Python), Express (Node.js), or Flask, simply accept the payload and return the JSON response above.
+                <span className="font-bold">ScopeShield API:</span> The integrated service uses <code>GET /api/health</code> and <code>POST /api/analyze</code>. Configure <code>VITE_BACKEND_API_URL</code> in the frontend and <code>FRONTEND_ORIGIN</code> in the backend. Keep <code>GEMINI_API_KEY</code> server-side only.
               </div>
 
               <div>
                 <h5 className="font-bold text-slate-900 mb-1 flex items-center gap-1.5">
                   <Terminal className="w-4 h-4 text-slate-600" />
-                  FastAPI (Python) Starter Stub:
+                  Local Setup:
                 </h5>
                 <pre className="p-3 bg-slate-900 text-emerald-400 rounded-lg overflow-x-auto">
-{`from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+{`Frontend:  http://localhost:5173
+Backend:   http://localhost:3000
 
-app = FastAPI()
+Frontend .env:
+VITE_BACKEND_API_URL=http://localhost:3000
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/health")
-def health():
-    return {"status": "ok"}
-
-@app.post("/api/analyze")
-def analyze(data: dict):
-    # Call your Gemini or LLM prompt here
-    return {
-        "classification": "OUT_OF_SCOPE",
-        "confidenceScore": 95,
-        "executiveSummary": "...",
-        "detailedFindings": [...],
-        "evidence": [...],
-        "costEstimate": {...},
-        "suggestedAction": "ISSUE_CHANGE_ORDER"
-    }`}
+Backend .env:
+FRONTEND_ORIGIN=http://localhost:5173
+GEMINI_API_KEY=<server-side secret>`}
                 </pre>
               </div>
             </div>

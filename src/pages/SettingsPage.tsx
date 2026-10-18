@@ -261,7 +261,7 @@ export const SettingsPage: React.FC = () => {
                   type="text"
                   value={backendUrl}
                   onChange={(e) => setBackendUrl(e.target.value)}
-                  placeholder="http://localhost:8000"
+                  placeholder="http://localhost:3000"
                   className="flex-1 px-3 py-2 text-xs border border-slate-300 rounded-lg font-mono focus:ring-2 focus:ring-indigo-500"
                 />
                 <button
@@ -271,11 +271,11 @@ export const SettingsPage: React.FC = () => {
                   className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold rounded-lg border border-slate-300 inline-flex items-center gap-1.5 transition-colors disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${isTesting ? 'animate-spin' : ''}`} />
-                  <span>{isTesting ? 'Pinging...' : 'Test /health'}</span>
+                  <span>{isTesting ? 'Pinging...' : 'Test /api/health'}</span>
                 </button>
               </div>
               <p className="text-[11px] text-slate-400">
-                Endpoint tested: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">{backendUrl.replace(/\/$/, '')}/health</code>
+                Endpoint tested: <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-700">{backendUrl.replace(/\/$/, '')}/api/health</code>
               </p>
             </div>
 
