@@ -1,0 +1,591 @@
+import { Contract, AnalysisResult, Proposal, UserProfile } from '../types';
+
+export const DEMO_USER: UserProfile = {
+  id: 'usr_freelancer_01',
+  name: 'Alex Rivera',
+  email: 'alex@riveradesign.co',
+  role: 'Senior Fullstack & UI Consultant',
+  companyName: 'Rivera Studio LLC',
+  defaultHourlyRate: 125,
+  currency: 'USD',
+  plan: 'PRO',
+  isDemoUser: true,
+};
+
+export const SAMPLE_CONTRACTS: Contract[] = [
+  {
+    id: 'cnt_acme_saas_01',
+    title: 'Acme SaaS Web App & Analytics Dashboard Redesign',
+    clientName: 'Sarah Jenkins',
+    clientEmail: 's.jenkins@acmesoftware.io',
+    clientCompany: 'Acme Software Inc.',
+    totalBudget: 14500,
+    hourlyRate: 125,
+    currency: 'USD',
+    startDate: '2026-09-01',
+    targetEndDate: '2026-11-15',
+    status: 'ACTIVE',
+    createdAt: '2026-08-28',
+    deliverables: [
+      'Redesign of 8 core web application views in React/TypeScript',
+      'Integration with existing REST endpoints for dashboard metrics and user profiles',
+      'Design System tokens and component library in Tailwind CSS',
+      'Cross-browser QA on desktop Chrome, Firefox, and Safari',
+      'Two (2) consolidated rounds of feedback and revisions',
+    ],
+    exclusions: [
+      'Native iOS or Android mobile application development',
+      'Third-party ERP or CRM bidirectional sync (e.g. NetSuite, Salesforce, SAP)',
+      'Legacy database migrations or custom ETL data pipelines',
+      'More than two revisions per delivered milestone',
+      'Real-time automated accounting webhooks outside standard Stripe checkout',
+    ],
+    revisionPolicy: 'Up to two (2) consolidated revision rounds are included per milestone. Additional requests or architectural shifts will require an approved Change Order at $125/hr.',
+    content: `STATEMENT OF WORK (SOW) #2026-ACME-04
+Client: Acme Software Inc. (Attn: Sarah Jenkins)
+Contractor: Rivera Studio LLC (Alex Rivera)
+Effective Date: September 1, 2026
+
+1. SCOPE OF SERVICES
+Contractor shall redesign and frontend-engineer the customer analytics dashboard for the Acme SaaS platform. Deliverables are strictly restricted to the 8 web screens detailed in Appendix A:
+- Overview Dashboard
+- User Activity Table
+- Revenue Summary (displaying existing computed API values)
+- Team Member Permissions
+- Profile & Security Settings
+- Billing Overview
+- Export CSV Modal
+- Notification Feed
+
+2. THIRD-PARTY INTEGRATIONS & EXCLUSIONS
+Clause 2.1: The Contractor shall consume Acme's documented REST API as provided on September 1, 2026.
+Clause 2.2: Specifically excluded from this engagement are any direct integrations with external ERP, accounting, or CRM platforms (including but not limited to NetSuite, QuickBooks, and Salesforce).
+Clause 2.3: Data migration from legacy databases or data warehousing architectures is explicitly excluded.
+
+3. CHANGE ORDER POLICY
+Clause 3.1: Any feature request, API modification, or design overhaul not explicitly enumerated in Section 1 constitutes out-of-scope work.
+Clause 3.2: Prior to performing out-of-scope work, Contractor shall issue an electronic Change Order specifying additional estimated hours, rate ($125/hr), and timeline impact. Work commences only upon written client approval.`,
+  },
+  {
+    id: 'cnt_pulsefit_mobile_02',
+    title: 'PulseFit Workout Companion iOS App (MVP)',
+    clientName: 'Marcus Vance',
+    clientEmail: 'marcus@pulsefit.app',
+    clientCompany: 'PulseFit Technologies LLC',
+    totalBudget: 18000,
+    hourlyRate: 110,
+    currency: 'USD',
+    startDate: '2026-09-15',
+    targetEndDate: '2026-12-01',
+    status: 'ACTIVE',
+    createdAt: '2026-09-10',
+    deliverables: [
+      'iOS mobile app MVP built with React Native / Expo',
+      'Apple HealthKit step and workout sync',
+      'Offline workout logging with SQLite caching',
+      'Apple Sign-In and Email authentication',
+    ],
+    exclusions: [
+      'Android version or Google Fit integration',
+      'AI-based computer vision food or form analysis',
+      'Live streaming 1-on-1 coach video calls',
+    ],
+    revisionPolicy: 'Max 2 design reviews. Backend API endpoints are assumed ready by client team.',
+    content: `STATEMENT OF WORK (SOW) #2026-PULSE-01
+Client: PulseFit Technologies LLC
+Contractor: Alex Rivera
+
+1. CORE SCOPE:
+Development of the iOS version only for the PulseFit Companion MVP. Syncs solely with Apple HealthKit.
+
+2. EXCLUSIONS:
+Any Android development, Google Fit syncing, and computer vision / AI camera recognition modules are deferred to Phase 2 and require separate compensation.`,
+  },
+  {
+    id: 'cnt_nova_brand_03',
+    title: 'Nova Global Identity & Webflow Marketing Site',
+    clientName: 'Elena Rostova',
+    clientEmail: 'elena@novalogistics.de',
+    clientCompany: 'Nova Logistics Group',
+    totalBudget: 8500,
+    hourlyRate: 130,
+    currency: 'USD',
+    startDate: '2026-10-01',
+    targetEndDate: '2026-10-31',
+    status: 'ACTIVE',
+    createdAt: '2026-09-25',
+    deliverables: [
+      'Brand guideline document (Typography, Color palette, Icon set)',
+      '5-page responsive Webflow marketing website in English',
+      'Contact form integration with HubSpot',
+    ],
+    exclusions: [
+      'Multilingual CMS translation setup (German/French/Spanish)',
+      'Custom customer shipment tracking portal / live GPS API backend',
+    ],
+    revisionPolicy: 'Two design feedback cycles on Figma before Webflow build.',
+    content: `SOW #2026-NOVA-MKT
+Deliverables: English marketing site (5 pages).
+Explicit Exclusions: Multi-language CMS localisation and live GPS freight tracking API integration.`,
+  },
+];
+
+export const SAMPLE_CLIENT_REQUESTS = [
+  {
+    id: 'req_sample_netsuite',
+    contractId: 'cnt_acme_saas_01',
+    title: 'Urgent: Add NetSuite ERP two-way transaction sync',
+    channel: 'SLACK' as const,
+    requesterName: 'Sarah Jenkins (VP Product)',
+    urgency: 'URGENT' as const,
+    text: `Hey Alex, hope you're having a great week! 
+Our executive team just met with enterprise prospects, and they need the revenue dashboard to do two-way live synchronization with NetSuite ERP and auto-reconcile transactions in QuickBooks before our launch demo next Friday. 
+Since you already built the revenue summary table, can we get this hooked up into the current sprint? Thanks!`,
+    expectedClassification: 'OUT_OF_SCOPE' as const,
+  },
+  {
+    id: 'req_sample_extra_charts',
+    contractId: 'cnt_acme_saas_01',
+    title: 'Request for 3 extra cohort retention charts',
+    channel: 'EMAIL' as const,
+    requesterName: 'Sarah Jenkins',
+    urgency: 'STANDARD' as const,
+    text: `Hi Alex,
+We love the overview dashboard so far! The marketing team is wondering if you could also add 3 additional detailed cohort retention charts with custom date-range pickers and weekly churn breakdowns. They weren't in the initial Figma file, but the data is already inside the response payload from the user activity API. Let us know if you can squeeze this in!`,
+    expectedClassification: 'SCOPE_CREEP_RISK' as const,
+  },
+  {
+    id: 'req_sample_bug_fix',
+    contractId: 'cnt_acme_saas_01',
+    title: 'Mobile responsiveness glitch on User Profile settings',
+    channel: 'JIRA' as const,
+    requesterName: 'QA Team / Sarah Jenkins',
+    urgency: 'STANDARD' as const,
+    text: `Hi Alex, on Safari mobile (iPhone 15 screen width), the save button on the User Profile & Security Settings view gets pushed slightly below the viewport navigation bar. Also the font size in the email input looks like 14px instead of 16px. Could you patch this up?`,
+    expectedClassification: 'IN_SCOPE' as const,
+  },
+];
+
+export const DEMO_ANALYSIS_RESULTS: Record<string, AnalysisResult> = {
+  // Out of Scope scenario
+  out_of_scope: {
+    id: 'anl_demo_netsuite_01',
+    contractId: 'cnt_acme_saas_01',
+    contractTitle: 'Acme SaaS Web App & Analytics Dashboard Redesign',
+    clientName: 'Sarah Jenkins',
+    requestTitle: 'Urgent: Add NetSuite ERP two-way transaction sync',
+    requestText: `Our executive team just met with enterprise prospects, and they need the revenue dashboard to do two-way live synchronization with NetSuite ERP and auto-reconcile transactions in QuickBooks before our launch demo next Friday. Since you already built the revenue summary table, can we get this hooked up into the current sprint?`,
+    classification: 'OUT_OF_SCOPE',
+    confidenceScore: 98,
+    executiveSummary: 'This request requests bidirectional synchronization with third-party ERP systems (NetSuite & QuickBooks), which is explicitly excluded in Section 2.2 of the signed Statement of Work.',
+    detailedFindings: [
+      'Direct violation of Clause 2.2: "Specifically excluded from this engagement are any direct integrations with external ERP, accounting, or CRM platforms (including but not limited to NetSuite, QuickBooks, and Salesforce)."',
+      'The current SOW scope is strictly frontend-engineering consuming existing documented REST endpoints (Clause 2.1).',
+      'Building two-way ERP reconciliation requires custom authentication, webhook listener endpoints, transactional rollback logic, and heavy security auditing not budgeted in the initial $14,500 agreement.',
+    ],
+    evidence: [
+      {
+        id: 'ev_01',
+        clauseTitle: 'Third-Party Integrations & Exclusions',
+        sectionNumber: 'Section 2, Clause 2.2',
+        contractSnippet: 'Specifically excluded from this engagement are any direct integrations with external ERP, accounting, or CRM platforms (including but not limited to NetSuite, QuickBooks, and Salesforce).',
+        relevanceScore: 99,
+        analysisNote: 'Exact keyword and architecture match. NetSuite and QuickBooks are explicitly named as contractual exclusions.',
+        isContradicting: true,
+      },
+      {
+        id: 'ev_02',
+        clauseTitle: 'Scope of Services — Deliverables',
+        sectionNumber: 'Section 1, Deliverable 2',
+        contractSnippet: 'Integration with existing REST endpoints for dashboard metrics and user profiles; Contractor shall consume Acme’s documented REST API as provided on September 1, 2026.',
+        relevanceScore: 91,
+        analysisNote: 'The agreed scope only includes consuming existing read-only REST endpoints, not developing third-party transactional sync pipelines.',
+        isContradicting: true,
+      },
+      {
+        id: 'ev_03',
+        clauseTitle: 'Change Order Policy',
+        sectionNumber: 'Section 3, Clause 3.1 & 3.2',
+        contractSnippet: 'Any feature request, API modification, or design overhaul not explicitly enumerated in Section 1 constitutes out-of-scope work. Contractor shall issue an electronic Change Order specifying additional estimated hours, rate ($125/hr), and timeline impact.',
+        relevanceScore: 95,
+        analysisNote: 'Contractual procedure mandates issuing an approved Change Order before any engineering begins.',
+        isContradicting: false,
+      },
+    ],
+    costEstimate: {
+      estimatedHoursMin: 28,
+      estimatedHoursMax: 38,
+      recommendedHourlyRate: 125,
+      calculatedAmountMin: 3500,
+      calculatedAmountMax: 4750,
+      suggestedFixedPrice: 4200,
+      timelineImpactDays: 7,
+      complexity: 'HIGH',
+    },
+    suggestedAction: 'ISSUE_CHANGE_ORDER',
+    freelancerRecommendation: 'Do not start development until a formal Change Order is authorized. Send our generated proposal specifying the 32 estimated hours ($4,000–$4,500) and noting the timeline impact on the Friday launch.',
+    status: 'CHANGE_ORDER_ISSUED',
+    isDemoData: true,
+    analyzedAt: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+  },
+
+  // Scope Creep Risk scenario
+  scope_creep_risk: {
+    id: 'anl_demo_extra_charts_02',
+    contractId: 'cnt_acme_saas_01',
+    contractTitle: 'Acme SaaS Web App & Analytics Dashboard Redesign',
+    clientName: 'Sarah Jenkins',
+    requestTitle: 'Request for 3 extra cohort retention charts',
+    requestText: `The marketing team is wondering if you could also add 3 additional detailed cohort retention charts with custom date-range pickers and weekly churn breakdowns. They weren't in the initial Figma file, but the data is already inside the response payload from the user activity API.`,
+    classification: 'SCOPE_CREEP_RISK',
+    confidenceScore: 84,
+    executiveSummary: 'This request introduces 3 new analytical charts not included in Appendix A or agreed Figma designs. While utilizing existing API endpoints, custom date pickers and cohort visual calculations exceed standard revisions.',
+    detailedFindings: [
+      'Appendix A specifies 8 enumerated web screens with a single Revenue Summary view. Adding 3 unbudgeted interactive charts expands frontend component complexity by ~25%.',
+      'The client notes "they weren\'t in the initial Figma file", implicitly acknowledging deviation from the agreed baseline.',
+      'Clause 3.1 governs design additions exceeding the 2 consolidated review rounds.',
+    ],
+    evidence: [
+      {
+        id: 'ev_04',
+        clauseTitle: 'Scope of Services Screens Specification',
+        sectionNumber: 'Section 1',
+        contractSnippet: 'Deliverables are strictly restricted to the 8 web screens detailed in Appendix A: Overview Dashboard, User Activity Table, Revenue Summary (displaying existing computed API values)...',
+        relevanceScore: 88,
+        analysisNote: 'Screen list is capped. Adding new cohort retention modules expands screen complexity.',
+        isContradicting: true,
+      },
+      {
+        id: 'ev_05',
+        clauseTitle: 'Revision & Feedback Limits',
+        sectionNumber: 'Deliverables Item 5',
+        contractSnippet: 'Two (2) consolidated rounds of feedback and revisions. More than two revisions per delivered milestone or architectural shifts will require an approved Change Order.',
+        relevanceScore: 78,
+        analysisNote: 'New net-new components cannot be absorbed under standard bug-fixing or design tweaks.',
+        isContradicting: true,
+      },
+    ],
+    costEstimate: {
+      estimatedHoursMin: 10,
+      estimatedHoursMax: 16,
+      recommendedHourlyRate: 125,
+      calculatedAmountMin: 1250,
+      calculatedAmountMax: 2000,
+      suggestedFixedPrice: 1650,
+      timelineImpactDays: 3,
+      complexity: 'MEDIUM',
+    },
+    suggestedAction: 'ISSUE_CHANGE_ORDER',
+    freelancerRecommendation: 'Offer to implement the cohort charts as an expedited mini Change Order (12 hours @ $125/hr = $1,500), or offer to swap one of the lower-priority Appendix A screens.',
+    status: 'PENDING_REVIEW',
+    isDemoData: true,
+    analyzedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+  },
+
+  // In Scope scenario
+  in_scope: {
+    id: 'anl_demo_bug_fix_03',
+    contractId: 'cnt_acme_saas_01',
+    contractTitle: 'Acme SaaS Web App & Analytics Dashboard Redesign',
+    clientName: 'Sarah Jenkins',
+    requestTitle: 'Mobile responsiveness glitch on User Profile settings',
+    requestText: `On Safari mobile (iPhone 15 screen width), the save button on the User Profile & Security Settings view gets pushed slightly below the viewport navigation bar. Also the font size in the email input looks like 14px instead of 16px. Could you patch this up?`,
+    classification: 'IN_SCOPE',
+    confidenceScore: 96,
+    executiveSummary: 'This request is fully within the contracted scope. Deliverable 4 mandates cross-browser QA and responsive viewport fidelity across core screens including User Profile & Security Settings.',
+    detailedFindings: [
+      'User Profile & Security Settings is explicitly listed as Screen #5 in Section 1.',
+      'Deliverable 4 guarantees functional responsiveness and bug rectification within the agreed milestone budget.',
+      'No Change Order is needed. This should be addressed as part of the scheduled sprint polish.',
+    ],
+    evidence: [
+      {
+        id: 'ev_06',
+        clauseTitle: 'Quality Assurance & Screen Scope',
+        sectionNumber: 'Section 1 & Deliverable 4',
+        contractSnippet: 'Profile & Security Settings screen; Cross-browser QA on desktop and mobile viewports with design system tokens.',
+        relevanceScore: 95,
+        analysisNote: 'Clear match to contracted deliverable. This is standard sprint quality maintenance.',
+        isContradicting: false,
+      },
+    ],
+    costEstimate: {
+      estimatedHoursMin: 1,
+      estimatedHoursMax: 2,
+      recommendedHourlyRate: 125,
+      calculatedAmountMin: 0,
+      calculatedAmountMax: 0,
+      suggestedFixedPrice: 0,
+      timelineImpactDays: 0,
+      complexity: 'LOW',
+    },
+    suggestedAction: 'ACCEPT_AS_IS',
+    freelancerRecommendation: 'Confirm resolution to client with a positive note: "Thanks for catching this! I have logged this bug under Deliverable 4 QA and will have the fix pushed by today\'s deployment."',
+    status: 'IN_SCOPE_RESOLVED',
+    isDemoData: true,
+    analyzedAt: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+  },
+
+  // Additional scenario: PulseFit Android
+  pulsefit_android: {
+    id: 'anl_demo_pulse_01',
+    contractId: 'cnt_pulsefit_mobile_02',
+    contractTitle: 'PulseFit Workout Companion iOS App (MVP)',
+    clientName: 'Marcus Vance',
+    requestTitle: 'Add Android device support & Google Fit integration',
+    requestText: 'We want to launch an Android version alongside our iOS beta test next month.',
+    classification: 'OUT_OF_SCOPE',
+    confidenceScore: 99,
+    executiveSummary: 'Direct violation of Section 2. Contract explicitly excludes Android and limits MVP build to Apple iOS HealthKit only.',
+    detailedFindings: [
+      'Clause 2.1: Android version or Google Fit integration is enumerated in Exclusions.',
+      'Requires separate React Native cross-platform build pipeline and device QA.',
+    ],
+    evidence: [
+      {
+        id: 'ev_p1',
+        clauseTitle: 'Platform Scope & Exclusions',
+        sectionNumber: 'Section 2',
+        contractSnippet: 'Any Android development, Google Fit syncing, and computer vision modules are deferred to Phase 2.',
+        relevanceScore: 99,
+        analysisNote: 'Explicit platform exclusion.',
+        isContradicting: true,
+      },
+    ],
+    costEstimate: {
+      estimatedHoursMin: 40,
+      estimatedHoursMax: 55,
+      recommendedHourlyRate: 110,
+      calculatedAmountMin: 4400,
+      calculatedAmountMax: 6050,
+      suggestedFixedPrice: 5200,
+      timelineImpactDays: 10,
+      complexity: 'HIGH',
+    },
+    suggestedAction: 'ISSUE_CHANGE_ORDER',
+    freelancerRecommendation: 'Issue Change Order CO-2026-003 or defer to Phase 2 as stated in the SOW.',
+    status: 'CHANGE_ORDER_ISSUED',
+    isDemoData: true,
+    analyzedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString(),
+  },
+
+  // Additional scenario: Nova Multilingual
+  nova_translation: {
+    id: 'anl_demo_nova_01',
+    contractId: 'cnt_nova_brand_03',
+    contractTitle: 'Nova Global Identity & Webflow Marketing Site',
+    clientName: 'Elena Rostova',
+    requestTitle: 'Implement multi-language CMS localization (German/Spanish)',
+    requestText: 'Can you set up multi-language CMS switching for the German and Spanish sales teams?',
+    classification: 'SCOPE_CREEP_RISK',
+    confidenceScore: 89,
+    executiveSummary: 'Agreement Section 1 specifies English-only 5-page site. Multilingual CMS setup requires Weglot / Webflow Localization tier.',
+    detailedFindings: [
+      'Explicit Exclusions list multilingual CMS translation setup.',
+    ],
+    evidence: [
+      {
+        id: 'ev_n1',
+        clauseTitle: 'Language Scope',
+        sectionNumber: 'Section 1',
+        contractSnippet: '5-page responsive Webflow marketing website in English; Multilingual CMS translation setup excluded.',
+        relevanceScore: 92,
+        analysisNote: 'Excluded in agreed baseline.',
+        isContradicting: true,
+      },
+    ],
+    costEstimate: {
+      estimatedHoursMin: 12,
+      estimatedHoursMax: 18,
+      recommendedHourlyRate: 130,
+      calculatedAmountMin: 1560,
+      calculatedAmountMax: 2340,
+      suggestedFixedPrice: 1950,
+      timelineImpactDays: 4,
+      complexity: 'MEDIUM',
+    },
+    suggestedAction: 'ISSUE_CHANGE_ORDER',
+    freelancerRecommendation: 'Offer localized CMS setup as an add-on package.',
+    status: 'PENDING_REVIEW',
+    isDemoData: true,
+    analyzedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5).toISOString(),
+  },
+};
+
+export const INITIAL_PROPOSALS: Proposal[] = [
+  {
+    id: 'prop_2026_001',
+    proposalNumber: 'CO-2026-001',
+    analysisId: 'anl_demo_netsuite_01',
+    contractId: 'cnt_acme_saas_01',
+    clientName: 'Sarah Jenkins',
+    clientEmail: 's.jenkins@acmesoftware.io',
+    clientCompany: 'Acme Software Inc.',
+    projectTitle: 'Acme SaaS Web App & Analytics Dashboard',
+    title: 'Change Order: NetSuite ERP & QuickBooks Synchronization Pipeline',
+    executiveSummary: 'Per our Statement of Work (Clause 2.2), third-party ERP integration is an out-of-scope architectural module. This Change Order provisions dedicated engineering to implement enterprise two-way data reconciliation safely.',
+    whyOutOfScopeReason: 'Contract SOW #2026-ACME-04 Section 2.2 specifically excludes direct integrations with external ERP, accounting, or CRM systems (including NetSuite and QuickBooks).',
+    pricingModel: 'FIXED',
+    totalAmount: 4200,
+    currency: 'USD',
+    timelineEstimate: '5-7 business days',
+    validUntil: '2026-11-01',
+    terms: '50% deposit upon electronic acceptance; 50% upon successful sandbox demonstration. Delivery timeline commences following receipt of valid sandbox API credentials.',
+    status: 'SENT',
+    createdAt: '2026-10-14T10:30:00Z',
+    sentAt: '2026-10-14T11:15:00Z',
+    shareableToken: 'co-acme-netsuite-9823',
+    isDemoData: true,
+    items: [
+      {
+        id: 'item_1',
+        title: 'NetSuite SuiteTalk REST Web Services Authentication & Connector',
+        description: 'Token-based authentication handler, secure secret rotation, and rate-limiting queue.',
+        estimatedHours: 12,
+        rate: 125,
+        subtotal: 1500,
+      },
+      {
+        id: 'item_2',
+        title: 'Two-way Ledger Reconciliation & Error Fallback Logic',
+        description: 'Automatic transaction mapping, idempotency tokens, and retry queue for failed webhook drops.',
+        estimatedHours: 14,
+        rate: 125,
+        subtotal: 1750,
+      },
+      {
+        id: 'item_3',
+        title: 'Revenue Dashboard UI Sync Indicator & Manual Trigger',
+        description: 'Frontend sync status badges, timestamp display, and manual refresh trigger on the existing revenue view.',
+        estimatedHours: 8,
+        rate: 125,
+        subtotal: 950,
+      },
+    ],
+    statusHistory: [
+      {
+        status: 'DRAFT',
+        timestamp: '2026-10-14T10:30:00Z',
+        note: 'Proposal drafted from ScopeShield AI analysis report',
+      },
+      {
+        status: 'SENT',
+        timestamp: '2026-10-14T11:15:00Z',
+        note: 'Sent via secure client review link to Sarah Jenkins (s.jenkins@acmesoftware.io)',
+      },
+      {
+        status: 'VIEWED',
+        timestamp: '2026-10-15T14:22:00Z',
+        note: 'Client opened document via IP 64.120.91.4 (San Francisco, CA)',
+      },
+    ],
+  },
+  {
+    id: 'prop_2026_002',
+    proposalNumber: 'CO-2026-002',
+    analysisId: 'anl_demo_extra_charts_02',
+    contractId: 'cnt_acme_saas_01',
+    clientName: 'Sarah Jenkins',
+    clientEmail: 's.jenkins@acmesoftware.io',
+    clientCompany: 'Acme Software Inc.',
+    projectTitle: 'Acme SaaS Web App & Analytics Dashboard',
+    title: 'Change Order: 3 Cohort Retention Visualizations & Date Range Filter',
+    executiveSummary: 'Addition of 3 interactive cohort retention visual components to the User Activity section.',
+    whyOutOfScopeReason: 'Exceeds the 8 contractually agreed views and 2 revision cycles in Appendix A.',
+    pricingModel: 'FIXED',
+    totalAmount: 1650,
+    currency: 'USD',
+    timelineEstimate: '3 business days',
+    validUntil: '2026-10-25',
+    terms: 'Billed upon completion as an addendum to Milestone 2 invoice.',
+    status: 'APPROVED',
+    createdAt: '2026-10-10T09:00:00Z',
+    sentAt: '2026-10-10T09:30:00Z',
+    respondedAt: '2026-10-11T16:45:00Z',
+    clientFeedback: 'Approved! Please proceed. This will help our board presentation immensely.',
+    shareableToken: 'co-acme-charts-4412',
+    isDemoData: true,
+    items: [
+      {
+        id: 'item_201',
+        title: 'Cohort Matrix Calculation & Heatmap Component',
+        description: 'Dynamic user retention grid with color scaling based on weekly retention rate.',
+        estimatedHours: 8,
+        rate: 125,
+        subtotal: 1000,
+      },
+      {
+        id: 'item_202',
+        title: 'Custom Multi-week Date Range Picker & CSV Export',
+        description: 'Calendar popover with presets (Last 30 days, Last 12 weeks, YTD) and export.',
+        estimatedHours: 5,
+        rate: 125,
+        subtotal: 650,
+      },
+    ],
+    statusHistory: [
+      { status: 'DRAFT', timestamp: '2026-10-10T09:00:00Z' },
+      { status: 'SENT', timestamp: '2026-10-10T09:30:00Z' },
+      { status: 'VIEWED', timestamp: '2026-10-10T11:20:00Z' },
+      { status: 'APPROVED', timestamp: '2026-10-11T16:45:00Z', note: 'Digitally signed by Sarah Jenkins' },
+    ],
+  },
+  {
+    id: 'prop_2026_003',
+    proposalNumber: 'CO-2026-003',
+    analysisId: 'anl_demo_pulse_01',
+    contractId: 'cnt_pulsefit_mobile_02',
+    clientName: 'Marcus Vance',
+    clientEmail: 'marcus@pulsefit.app',
+    clientCompany: 'PulseFit Technologies LLC',
+    projectTitle: 'PulseFit Workout Companion iOS App (MVP)',
+    title: 'Change Order: Google Fit Sync & Android Cross-Platform Bundle',
+    executiveSummary: 'Porting of Apple HealthKit queries to Google Health Connect / Google Fit for Android compatibility.',
+    whyOutOfScopeReason: 'Contract strictly stipulates iOS MVP only in Section 1 and lists Android in Section 2 exclusions.',
+    pricingModel: 'FIXED',
+    totalAmount: 5200,
+    currency: 'USD',
+    timelineEstimate: '8-10 business days',
+    validUntil: '2026-11-15',
+    terms: 'Billed 50% upfront, 50% upon Play Store internal test build delivery.',
+    status: 'DECLINED',
+    createdAt: '2026-10-05T14:10:00Z',
+    sentAt: '2026-10-05T15:00:00Z',
+    respondedAt: '2026-10-08T09:12:00Z',
+    clientFeedback: 'We decided to keep our 100% focus on iOS for launch. We will revisit Android in Q1 2027.',
+    shareableToken: 'co-pulsefit-android-1092',
+    isDemoData: true,
+    items: [
+      {
+        id: 'item_301',
+        title: 'Android Build Configuration & Permissions Setup',
+        description: 'React Native Android target build, keystore setup, and runtime health permissions.',
+        estimatedHours: 12,
+        rate: 110,
+        subtotal: 1320,
+      },
+      {
+        id: 'item_302',
+        title: 'Google Health Connect API Adapter',
+        description: 'Data transformation pipeline matching iOS HealthKit schemas to Google Health Connect.',
+        estimatedHours: 24,
+        rate: 110,
+        subtotal: 2640,
+      },
+      {
+        id: 'item_303',
+        title: 'Android Physical Device QA & Release Signing',
+        description: 'Testing across Samsung Galaxy, Pixel, and Motorola test devices.',
+        estimatedHours: 11,
+        rate: 110,
+        subtotal: 1240,
+      },
+    ],
+    statusHistory: [
+      { status: 'DRAFT', timestamp: '2026-10-05T14:10:00Z' },
+      { status: 'SENT', timestamp: '2026-10-05T15:00:00Z' },
+      { status: 'VIEWED', timestamp: '2026-10-06T10:15:00Z' },
+      { status: 'DECLINED', timestamp: '2026-10-08T09:12:00Z', note: 'Client deferred Android release to Q1 2027' },
+    ],
+  },
+];

@@ -1,0 +1,6 @@
+{
+  "name": "ScopeShield AI",
+  "description": "Protects freelancers from unbilled scope creep by comparing project contracts with client requests, estimating extra costs, and generating approval-ready change proposals.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
