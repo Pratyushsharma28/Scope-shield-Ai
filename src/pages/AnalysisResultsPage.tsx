@@ -73,11 +73,10 @@ export const AnalysisResultsPage: React.FC = () => {
 
   // Values directly synchronized with the typed backend response
   const contract = contracts.find((c) => c.id === currentAnalysis.contractId) || activeContract || contracts[0];
-  const backendHours = Math.round(
+  const backendHours = (
     (currentAnalysis.costEstimate.estimatedHoursMin + currentAnalysis.costEstimate.estimatedHoursMax) / 2
-  ) || 24;
-  const backendRateINR = currentAnalysis.costEstimate.recommendedHourlyRate || 8500;
-  const backendEstimatedCostINR = currentAnalysis.costEstimate.suggestedFixedPrice || (backendHours * backendRateINR);
+  );
+  const backendRateINR = currentAnalysis.costEstimate.recommendedHourlyRate;
 
   // Editable overrides for proposal drafting
   const [adjustedHours, setAdjustedHours] = useState<number>(backendHours);
@@ -88,7 +87,7 @@ export const AnalysisResultsPage: React.FC = () => {
   // Determine if this case needs human review warning
   const isNeedsReview =
     currentAnalysis.classification === 'SCOPE_CREEP_RISK' ||
-    currentAnalysis.confidenceScore < 90 ||
+    (currentAnalysis.confidenceScore !== undefined && currentAnalysis.confidenceScore < 90) ||
     currentAnalysis.suggestedAction === 'REQUEST_CLARIFICATION';
 
   // Format currency in Indian Rupees (INR)
@@ -99,7 +98,9 @@ export const AnalysisResultsPage: React.FC = () => {
   // Generate diplomatic client reply template
   const clientResponseTemplate = currentAnalysis.classification === 'IN_SCOPE'
     ? `Hi ${currentAnalysis.clientName.split(' ')[0]},\n\nThank you for sharing this request regarding "${currentAnalysis.requestTitle}".\n\nI checked this against our agreement deliverables. This item is fully covered within our agreed scope, so I will have it incorporated in our current sprint without extra charge.\n\nBest regards,\nAlex`
-    : `Hi ${currentAnalysis.clientName.split(' ')[0]},\n\nThank you for reaching out regarding "${currentAnalysis.requestTitle}".\n\nI reviewed our signed agreement. The requested capability introduces items outside our agreed deliverables schedule. To deliver this with dedicated engineering and QA, I estimate approximately ${adjustedHours} additional hours (${formatINR(calculatedTotalINR)}).\n\nI have prepared an electronic Change Order proposal for your authorization:\nhttps://scopeshield.app/proposals\n\nPlease let me know if you would like to proceed or prioritize this in the next release.\n\nBest regards,\nAlex`;
+    : currentAnalysis.suggestedAction === 'REQUEST_CLARIFICATION'
+      ? `Hi ${currentAnalysis.clientName.split(' ')[0]},\n\nThank you for reaching out regarding "${currentAnalysis.requestTitle}".\n\nI reviewed the request against our agreement, but it needs further scope review before I can confirm whether it is covered or estimate any additional work. I will follow up once we have clarified the relevant contract details.\n\nBest regards,\nAlex`
+      : `Hi ${currentAnalysis.clientName.split(' ')[0]},\n\nThank you for reaching out regarding "${currentAnalysis.requestTitle}".\n\nI reviewed our signed agreement. The requested capability introduces items outside our agreed deliverables schedule. To deliver this with dedicated engineering and QA, I estimate approximately ${adjustedHours} additional hours (${formatINR(calculatedTotalINR)}).\n\nI have prepared an electronic Change Order proposal for your authorization:\nhttps://scopeshield.app/proposals\n\nPlease let me know if you would like to proceed or prioritize this in the next release.\n\nBest regards,\nAlex`;
 
   const handleCopyTemplate = () => {
     navigator.clipboard.writeText(clientResponseTemplate);
@@ -252,7 +253,9 @@ export const AnalysisResultsPage: React.FC = () => {
             <div className="mt-1.5 flex items-center gap-3">
               <ClassificationBadge classification={currentAnalysis.classification} size="lg" />
               <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">
-                {currentAnalysis.confidenceScore}% Confidence
+                {currentAnalysis.confidenceScore !== undefined
+                  ? `${currentAnalysis.confidenceScore}% Confidence`
+                  : 'Confidence not provided'}
               </span>
             </div>
           </div>
@@ -355,8 +358,12 @@ export const AnalysisResultsPage: React.FC = () => {
                     <div className="font-bold text-slate-900">{ev.clauseTitle}</div>
                     <div className="flex items-center gap-2 text-slate-500">
                       <span className="font-mono text-slate-400">{ev.sectionNumber}</span>
-                      <span aria-hidden="true">·</span>
-                      <span className="font-semibold text-indigo-700">{ev.relevanceScore}% match</span>
+                      {ev.relevanceScore !== undefined && (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span className="font-semibold text-indigo-700">{ev.relevanceScore}% match</span>
+                        </>
+                      )}
                     </div>
                   </div>
 
@@ -471,14 +478,16 @@ export const AnalysisResultsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Timeline Impact:</span>
                 <span className="font-bold text-slate-900">
-                  +{currentAnalysis.costEstimate.timelineImpactDays} business days
+                  {currentAnalysis.costEstimate.timelineImpactDays !== undefined
+                    ? `+${currentAnalysis.costEstimate.timelineImpactDays} business days`
+                    : 'Not provided by backend'}
                 </span>
               </div>
 
               <div className="flex items-center justify-between">
                 <span className="text-slate-500">Technical Complexity:</span>
                 <span className="font-bold text-indigo-700">
-                  {currentAnalysis.costEstimate.complexity}
+                  {currentAnalysis.costEstimate.complexity || 'Not provided by backend'}
                 </span>
               </div>
             </div>

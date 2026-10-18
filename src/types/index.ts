@@ -16,9 +16,9 @@ export interface ContractEvidence {
   clauseTitle: string;
   sectionNumber: string;
   contractSnippet: string;
-  relevanceScore: number; // 0 to 100
+  relevanceScore?: number; // 0 to 100
   analysisNote: string;
-  isContradicting: boolean; // true if the request violates this clause
+  isContradicting?: boolean; // true if the request violates this clause
 }
 
 export interface CostEstimate {
@@ -28,8 +28,8 @@ export interface CostEstimate {
   calculatedAmountMin: number;
   calculatedAmountMax: number;
   suggestedFixedPrice: number;
-  timelineImpactDays: number;
-  complexity: 'LOW' | 'MEDIUM' | 'HIGH' | 'ARCHITECTURAL';
+  timelineImpactDays?: number;
+  complexity?: 'LOW' | 'MEDIUM' | 'HIGH' | 'ARCHITECTURAL';
 }
 
 export interface Contract {
@@ -77,6 +77,7 @@ export interface BackendAnalyzeRequestFields {
  */
 export interface BackendAnalyzeResponse {
   classification?: ScopeClassification | string;
+  status?: 'within_scope' | 'potentially_out_of_scope' | 'needs_review' | string;
   confidenceScore?: number;
   confidence?: number;
   summary?: string;
@@ -85,12 +86,17 @@ export interface BackendAnalyzeResponse {
   findings?: string[];
   evidence?: ContractEvidence[];
   contractEvidence?: ContractEvidence[];
+  uncertaintyReasons?: string[];
+  requiresHumanReview?: boolean;
+  estimatedExtraHours?: number;
+  hourlyRate?: number;
+  estimatedExtraCost?: number;
+  currency?: string;
   costEstimate?: Partial<CostEstimate>;
   estimatedCost?: number;
   suggestedAction?: SuggestedAction | string;
   recommendation?: string;
   freelancerRecommendation?: string;
-  status?: string;
   data?: any;
   success?: boolean;
   error?: string;
@@ -107,13 +113,13 @@ export interface AnalysisResult {
   requestTitle: string;
   requestText: string;
   classification: ScopeClassification;
-  confidenceScore: number; // 0 - 100
+  confidenceScore?: number; // 0 - 100 when the backend provides it
   executiveSummary: string;
   detailedFindings: string[];
   evidence: ContractEvidence[];
   costEstimate: CostEstimate;
   suggestedAction: SuggestedAction;
-  freelancerRecommendation: string;
+  freelancerRecommendation?: string;
   whyOutOfScopeReason?: string;
   status?: 'CHANGE_ORDER_ISSUED' | 'PENDING_REVIEW' | 'IN_SCOPE_RESOLVED' | 'ACTION_REQUIRED';
   isDemoData: boolean; // Strictly labeled to prevent misleading users
